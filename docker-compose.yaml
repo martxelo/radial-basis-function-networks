@@ -1,0 +1,21 @@
+name: radial-basis-function-networks
+
+services:
+
+  main:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: radial-basis-function-networks-main
+    volumes:
+      - .:/opt/project
+    command: python main.py
+  
+  dev:
+    build:
+      context: .
+      dockerfile: docker/dev.Dockerfile
+    container_name: radial-basis-function-networks-dev
+    volumes:
+      - .:/opt/project
+    command: make
