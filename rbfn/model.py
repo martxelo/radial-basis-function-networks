@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import torch
 from torch import nn
@@ -19,6 +21,7 @@ class Model():
         self.centres = []
         self.radii = []
         self.pred_bg = []
+        self.scores = []
 
     def get_background_coordinates(self):
 
@@ -30,6 +33,17 @@ class Model():
         xx, yy = np.meshgrid(x, y)
 
         return np.c_[xx.reshape(-1), yy.reshape(-1)]
+    
+    def save_data(self):
+
+        os.makedirs("results", exist_ok=True)
+
+        np.save("results/x_bg.npy", self.x_bg)
+        np.save("results/centres.npy", self.centres)
+        np.save("results/radii.npy", self.radii)
+        np.save("results/pred_bg.npy", self.pred_bg)
+        np.save("results/scores.npy", self.scores)
+
 
     def train(self):
 
@@ -40,12 +54,9 @@ class Model():
         # device
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
-        # show total number of parameters
-        # print("total params =",sum(p.numel() for p in self.estimator.parameters() if p.requires_grad))
-
         # train
         self.estimator.train()
-        for epoch in range(self.epochs):
+        for epoch in range(1, self.epochs + 1):
             total_loss = 0
             for x, y in self.dataloader:
                 x, y = x.to(device), y.to(device)
@@ -70,9 +81,16 @@ class Model():
             # score
             pred = self.estimator(torch.from_numpy(self.x).to(device)).detach().numpy()
             score = f1_score(np.argmax(self.y, axis=1), np.argmax(pred, axis=1))
+            self.scores.append(score)
 
             # show some metrics
             if epoch % 10 == 0:
                 print(f"{epoch=} {total_loss=:.4f} {score=:.4f}")
 
 
+        # convert to numpy
+        self.centres = np.array(self.centres)
+        self.radii = np.array(self.radii)
+        self.pred_bg = np.array(self.pred_bg)
+        self.scores = np.array(self.scores)
+        self.save_data()
